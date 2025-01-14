@@ -112,7 +112,11 @@ wsServer.on("connection", (ws) => {
   ws.on('close', () => {
     currentWSClients = currentWSClients.filter(client => (client.name !== username) && (client.ws !== ws));
     userState = userState.filter(client => (client.name !== username) && (client.ws !== ws));
-    Array.from(wsServer.clients).forEach(client => client.send(JSON.stringify({type: 'disconnected', message: 'ws disconnected'})));
+    Array.from(wsServer.clients).forEach(client => {
+      if (client !== ws) {
+        return client.send(JSON.stringify({type: 'disconnected', message: 'ws disconnected'}));
+      }
+    });
   });
 
 });
