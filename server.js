@@ -4,7 +4,6 @@ import WebSocket, { WebSocketServer } from "ws";
 import cors from "cors";
 import bodyParser from "body-parser";
 import * as crypto from "crypto";
-import WS from "ws";
 
 const app = express();
 
@@ -41,15 +40,6 @@ app.get("/users", async (request, response) => {
     };
     usersList.push(currentUser);
   });
-  /*
-  userState.forEach(user => {
-    const currentUser = {
-      name: user.name,
-      id: user.id,
-    };
-    usersList.push(currentUser);
-  });
-  */
   response.status(200).send(JSON.stringify(usersList)).end();
 });
 
@@ -92,12 +82,11 @@ const server = http.createServer(app);
 const wsServer = new WebSocketServer({ server });
 
 wsServer.on("connection", (ws) => {
-  //ws.send('server connected msg');
+  Array.from(wsServer.clients).forEach(client => client.send(JSON.stringify({type: 'connected', message: 'ws connected'})));
   let username;
 
   ws.on('message', (msg) => {
     const data = JSON.parse(msg);
-    //console.log('Принято data', data);
 
     if (data.type === 'onOpen') {
       currentWSClients = currentWSClients.filter(client => client.name !== data.name);
@@ -114,7 +103,6 @@ wsServer.on("connection", (ws) => {
         chat.push({name: data.name, message: data.message});
       }
 
-      //console.log('sending: ', JSON.stringify([{name: data.name, message: data.message}]));
       Array.from(wsServer.clients).forEach(client => client.send(JSON.stringify([{name: data.name, message: data.message}])));
     } else if (data.type === 'onClose') {
       currentWSClients = currentWSClients.filter(client => client.name !== data.name);
@@ -124,7 +112,7 @@ wsServer.on("connection", (ws) => {
   ws.on('close', () => {
     currentWSClients = currentWSClients.filter(client => (client.name !== username) && (client.ws !== ws));
     userState = userState.filter(client => (client.name !== username) && (client.ws !== ws));
-    //console.log(`Пользователь ${username} отключился`);
+    Array.from(wsServer.clients).forEach(client => client.send(JSON.stringify({type: 'disconnected', message: 'ws disconnected'})));
   });
 
 });
